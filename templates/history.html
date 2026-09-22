@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}History - Fake News Detection System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-11">
+    <div class="simple-card p-4">
+      
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3 gap-2">
+        <div>
+          <h4 class="fw-bold mb-1 text-dark">Verification History Log</h4>
+          <p class="text-muted small mb-0">Past news analyses, ML predictions, and live evidence records.</p>
+        </div>
+        <div class="d-flex gap-2">
+          {% if predictions %}
+            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#clearHistoryModal">
+              <i class="bi bi-trash3 me-1"></i> Clear History
+            </button>
+          {% endif %}
+          <a href="{% url 'dashboard' %}" class="btn btn-primary-custom btn-sm px-3">
+            <i class="bi bi-plus-lg me-1"></i> Check New Claim
+          </a>
+        </div>
+      </div>
+
+      <!-- Search and Filter -->
+      <form method="get" class="row g-2 mb-4">
+        <div class="col-md-7">
+          <div class="input-group">
+            <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+            <input type="text" name="q" class="form-control" placeholder="Search by keyword, headline, or claim..." value="{{ query }}">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select name="status" class="form-select">
+            <option value="">All Verdicts</option>
+            <option value="REAL" {% if 'REAL' in status_filter %}selected{% endif %}>LIKELY REAL</option>
+            <option value="FAKE" {% if 'FAKE' in status_filter %}selected{% endif %}>LIKELY FAKE</option>
+            <option value="MISLEADING" {% if 'MISLEADING' in status_filter %}selected{% endif %}>MISLEADING</option>
+            <option value="UNVERIFIED" {% if 'UNVERIFIED' in status_filter %}selected{% endif %}>UNVERIFIED</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex gap-1">
+          <button type="submit" class="btn btn-secondary w-100">Filter</button>
+          {% if query or status_filter %}
+            <a href="{% url 'history' %}" class="btn btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+          {% endif %}
+        </div>
+      </form>
+
+      <!-- History Table -->
+      {% if predictions %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle small">
+            <thead class="table-light">
+              <tr class="text-uppercase text-secondary">
+                <th style="width: 15%;">Date</th>
+                <th style="width: 45%;">News Headline / Content</th>
+                <th style="width: 18%;">ML Prediction</th>
+                <th style="width: 14%;">Final Assessment</th>
+                <th style="width: 8%;" class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in predictions %}
+                <tr>
+                  <td class="text-muted">
+                    {{ item.created_at|date:"M d, Y" }}<br>
+                    <span style="font-size: 0.75rem;">{{ item.created_at|date:"H:i" }}</span>
+                  </td>
+                  <td>
+                    <div class="fw-semibold text-dark text-truncate" style="max-width: 400px;">
+                      {{ item.news_title|default:item.news_text }}
+                    </div>
+                    <div class="small text-muted text-truncate" style="max-width: 400px;">
+                      {{ item.news_text|truncatechars:80 }}
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge {% if item.ml_prediction == 'REAL' %}bg-success{% else %}bg-danger{% endif %} me-1">
+                      {{ item.ml_prediction }}
+                    </span>
+                    <span class="fw-bold text-dark">{{ item.ml_confidence|floatformat:1 }}%</span>
+                  </td>
+                  <td>
+                    <span class="badge {% if 'REAL' in item.final_verdict %}bg-success text-white{% elif 'FAKE' in item.final_verdict %}bg-danger text-white{% elif 'MISLEADING' in item.final_verdict %}bg-warning text-dark{% else %}bg-secondary text-white{% endif %}">
+                      {{ item.final_verdict }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <a href="{% url 'result_detail' item.id %}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.78rem;">
+                      View
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
+          <h6>No history records found</h6>
+          <p class="small">Submit news on the home page to see past results here.</p>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="clearHistoryModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger fw-bold">Clear History</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-dark">
+        Are you sure you want to delete all saved news prediction records?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <form method="post" action="{% url 'clear_history' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Yes, Delete All</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,563 @@
+{% extends "base.html" %}
+
+{% block title %}User View - Veritas Fake News Detector{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>AI Fake News Analyzer</h1>
+  <p>Paste any news article or headline to analyze linguistic veracity, assess confidence probabilities, or flag ambiguous claims for human review.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1.75rem; margin-bottom: 2.5rem;">
+  
+  <!-- Form Card -->
+  <div class="card">
+    <div class="card-title">
+      <span><i class="fa-solid fa-file-lines" style="color: var(--primary);"></i> Submit News Claim</span>
+    </div>
+
+    <!-- Quick Presets -->
+    <div class="presets-container">
+      <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-subtle); align-self: center;">Try Sample:</span>
+      <button type="button" class="preset-chip" onclick="loadSample('real')">
+        <i class="fa-solid fa-circle-check" style="color: #34D399;"></i> Real ISRO News
+      </button>
+      <button type="button" class="preset-chip" onclick="loadSample('fake')">
+        <i class="fa-solid fa-triangle-exclamation" style="color: #F87171;"></i> Viral Garlic Hoax
+      </button>
+      <button type="button" class="preset-chip" onclick="loadSample('borderline')">
+        <i class="fa-solid fa-clock-rotate-left" style="color: #FBBF24;"></i> Borderline Municipal News
+      </button>
+    </div>
+
+    <form id="predictionForm">
+      <div class="form-group">
+        <label class="form-label" for="newsTitle">News Title / Headline (Optional)</label>
+        <input type="text" id="newsTitle" class="form-control" placeholder="e.g. ISRO launches navigation satellite...">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="newsText">Article Text or News Claim <span style="color: var(--danger);">*</span></label>
+        <textarea id="newsText" class="form-control" placeholder="Paste full article text or headline here..." required></textarea>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button type="button" class="btn btn-outline" onclick="clearForm()">
+          <i class="fa-solid fa-rotate-left"></i> Clear
+        </button>
+        <button type="submit" class="btn btn-primary" id="analyzeBtn">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze News
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Realtime Results Card -->
+  <div class="card" id="resultContainer" style="display: flex; flex-direction: column; justify-content: center;">
+    <div id="initialState" style="text-align: center; color: var(--text-muted); padding: 2rem 1rem;">
+      <i class="fa-solid fa-magnifying-glass-chart" style="font-size: 3rem; color: var(--border-glow); margin-bottom: 1rem;"></i>
+      <h3 style="font-weight: 700; margin-bottom: 0.5rem; color: var(--text-main);">Awaiting News Input</h3>
+      <p style="font-size: 0.9rem;">Submit an article to see calibrated probability distribution, model confidence, and automated editorial review tagging.</p>
+    </div>
+
+    <!-- Active Result Box -->
+    <div id="resultBox" style="display: none;" class="result-box">
+      <div class="verdict-header">
+        <span id="badgeElement" class="badge"></span>
+        <span id="rawConfidence" style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);"></span>
+      </div>
+
+      <h2 id="verdictTitle" class="verdict-title"></h2>
+      
+      <p id="verdictExplanation" style="font-size: 0.92rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5;"></p>
+
+      <!-- Confidence Bar -->
+      <div class="confidence-wrapper">
+        <div class="confidence-label">
+          <span>Model Confidence</span>
+          <span id="confidencePercent">0%</span>
+        </div>
+        <div class="progress-track">
+          <div id="confidenceBar" class="progress-bar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Probabilities Breakdown -->
+      <div class="prob-breakdown">
+        <div class="prob-item">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #34D399; margin-bottom: 0.2rem;">REAL PROBABILITY</div>
+          <div id="probReal" class="prob-val" style="color: #34D399;">0.0%</div>
+        </div>
+        <div class="prob-item">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #F87171; margin-bottom: 0.2rem;">FAKE PROBABILITY</div>
+          <div id="probFake" class="prob-val" style="color: #F87171;">0.0%</div>
+        </div>
+      </div>
+
+      <!-- Content Writer Review / Fact-Check Notice -->
+      <div id="humanReviewNotice" style="display: none; margin-top: 1.25rem; padding: 0.9rem 1rem; border-radius: var(--radius-sm); font-size: 0.84rem; line-height: 1.45;">
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==============================================================================
+     USER SUBMISSION HISTORY & EDITORIAL RESOLUTIONS SECTION
+     ============================================================================== -->
+<div class="card" style="margin-top: 2.5rem; margin-bottom: 2.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+    <div>
+      <div class="card-title" style="margin-bottom: 0.25rem;">
+        <span><i class="fa-solid fa-list-check" style="color: #60A5FA;"></i> My Submitted Claims & Editorial Resolutions</span>
+      </div>
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0;">
+        Track the status of your claims. Fake news claims are routed to Content Writers for human fact-checking, and resolutions update in real-time.
+      </p>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="loadUserHistory()" id="refreshHistoryBtn" style="white-space: nowrap;">
+      <i class="fa-solid fa-rotate"></i> Refresh Status
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="custom-table" id="userHistoryTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>News Claim / Headline</th>
+          <th>ML Assessment</th>
+          <th>Editorial Status & Fact-Check Verdict</th>
+          <th>Submitted On</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="userHistoryBody">
+        {% if user_history %}
+          {% for h in user_history %}
+          <tr id="user-row-{{ h.id }}">
+            <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-subtle);">#{{ h.id }}</td>
+            <td style="max-width: 320px;">
+              <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ h.title }}">
+                {{ h.title or (h.text[:50] ~ '...') }}
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.15rem;" title="{{ h.text }}">
+                {{ h.text }}
+              </div>
+            </td>
+            <td>
+              <span class="badge badge-{{ h.badge_class }}" style="font-size: 0.72rem;">
+                {% if h.prediction == 'REAL' or h.raw_label == 'REAL' %}
+                  <i class="fa-solid fa-check"></i> ML: Real
+                {% else %}
+                  <i class="fa-solid fa-xmark"></i> ML: Fake
+                {% endif %}
+              </span>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                {{ h.confidence }}% conf
+              </div>
+            </td>
+            <td>
+              {% if h.writer_status == 'RESOLVED' %}
+                <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                  <span class="badge badge-{% if h.human_verdict == 'REAL' %}success{% else %}danger{% endif %}" style="font-size: 0.72rem;">
+                    <i class="fa-solid fa-check-double"></i> VERIFIED {{ h.human_verdict }}
+                  </span>
+                  <span style="font-size: 0.73rem; color: var(--text-subtle);">
+                    Resolved by Editor: <strong style="color: var(--text-main);">{{ h.reviewed_by or 'Editorial Staff' }}</strong>
+                  </span>
+                  {% if h.editorial_notes %}
+                    <span style="font-size: 0.72rem; color: #93C5FD; background: rgba(59, 130, 246, 0.1); padding: 0.2rem 0.45rem; border-radius: 4px; display: inline-block; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ h.editorial_notes }}">
+                      <i class="fa-solid fa-pen-nib"></i> {{ h.editorial_notes }}
+                    </span>
+                  {% endif %}
+                </div>
+              {% elif h.writer_status == 'PENDING' or h.is_needs_review %}
+                <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                  <span class="badge badge-warning" style="font-size: 0.72rem;">
+                    <i class="fa-solid fa-clock"></i> PENDING WRITER REVIEW
+                  </span>
+                  <span style="font-size: 0.72rem; color: #FBBF24;">
+                    Queued in Content Writer Portal
+                  </span>
+                </div>
+              {% else %}
+                <span style="color: var(--text-subtle); font-size: 0.78rem;">
+                  <i class="fa-solid fa-robot"></i> Auto-Verified Real (ML)
+                </span>
+              {% endif %}
+            </td>
+            <td style="font-size: 0.78rem; color: var(--text-subtle); font-family: 'JetBrains Mono', monospace; white-space: nowrap;">
+              {{ h.created_at }}
+            </td>
+            <td>
+              <button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="testInForm('{{ h.title | replace("'", "\\'") }}', '{{ h.text | replace("'", "\\'") }}')">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Test
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr id="emptyHistoryRow">
+            <td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+              <i class="fa-solid fa-inbox" style="font-size: 2rem; color: var(--border-glow); margin-bottom: 0.5rem; display: block;"></i>
+              No claims submitted in this session yet. Submit a news claim above to see your history and editorial reviews!
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==============================================================================
+     LIVE NEWS FEED SECTION (Malayala Manorama & Indian News Outlets)
+     ============================================================================== -->
+<div style="margin-top: 3rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+      <h2 style="font-size: 1.45rem; font-weight: 800;">
+        <i class="fa-solid fa-rss" style="color: #F59E0B;"></i> Live Indian News Feed
+      </h2>
+      <p style="font-size: 0.88rem; color: var(--text-muted);">
+        Real-time headlines from <strong>Malayala Manorama (Onmanorama)</strong>, <strong>NDTV</strong>, and <strong>The Hindu</strong> — automatically classified in real-time.
+      </p>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="refreshFeed()" id="refreshBtn">
+      <i class="fa-solid fa-arrows-rotate"></i> Refresh Feed
+    </button>
+  </div>
+
+  <div class="news-grid" id="newsGrid">
+    {% for item in live_news %}
+    <div class="news-card">
+      <div>
+        <div class="news-meta">
+          <span class="news-source"><i class="fa-solid fa-newspaper"></i> {{ item.source }}</span>
+          <span>{{ item.published }}</span>
+        </div>
+        <h3 class="news-headline">{{ item.title }}</h3>
+        <p class="news-snippet">{{ item.snippet }}</p>
+      </div>
+
+      <div class="news-footer">
+        <div>
+          <span class="badge badge-{{ item.badge_class }}">
+            {% if item.prediction == 'REAL' %}
+              <i class="fa-solid fa-check"></i> Likely Real
+            {% elif item.prediction == 'FAKE' %}
+              <i class="fa-solid fa-xmark"></i> Potentially Fake
+            {% else %}
+              <i class="fa-solid fa-user-clock"></i> Needs Review
+            {% endif %}
+          </span>
+          <span style="font-size: 0.75rem; color: var(--text-subtle); margin-left: 0.4rem; font-weight: 600;">
+            {{ item.confidence }}% conf
+          </span>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="testInForm('{{ item.title | replace("'", "\\'") }}', '{{ item.snippet | replace("'", "\\'") }}')">
+          <i class="fa-solid fa-bolt"></i> Test
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Sample Presets
+const SAMPLES = {
+  real: {
+    title: "ISRO Launches Next-Gen Navigation Satellite from Sriharikota",
+    text: "The Indian Space Research Organisation (ISRO) successfully launched its advanced navigation satellite aboard GSLV rocket from Sriharikota spaceport, enhancing regional navigation accuracy across the subcontinent."
+  },
+  fake: {
+    title: "Drinking Boiled Betel Leaves and Turmeric Cures All Viral Infections in 3 Hours",
+    text: "AYURVEDIC MIRACLE DOCTORS SUPPRESSED! A viral message claims that boiling raw turmeric with betel leaf juice instantly kills all mutated viral strains in the human throat within 3 hours. Forward this urgent remedy to all family groups immediately!"
+  },
+  borderline: {
+    title: "City Municipal Council Approves Sanitation Tender for Southern Ward",
+    text: "The municipal committee met yesterday to review routine sanitation subcontracts and drainage cleaning proposals for the southern municipal zone ahead of seasonal rains."
+  }
+};
+
+function loadSample(type) {
+  const sample = SAMPLES[type];
+  if (sample) {
+    document.getElementById('newsTitle').value = sample.title;
+    document.getElementById('newsText').value = sample.text;
+  }
+}
+
+function clearForm() {
+  document.getElementById('newsTitle').value = '';
+  document.getElementById('newsText').value = '';
+  document.getElementById('resultBox').style.display = 'none';
+  document.getElementById('initialState').style.display = 'block';
+}
+
+function testInForm(title, snippet) {
+  document.getElementById('newsTitle').value = title || '';
+  document.getElementById('newsText').value = snippet || '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Form Submission AJAX
+document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('analyzeBtn');
+  const title = document.getElementById('newsTitle').value.trim();
+  const text = document.getElementById('newsText').value.trim();
+
+  if (!text) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...';
+
+  try {
+    const res = await fetch('/api/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title, text: text })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      displayResult(data.data);
+      // Automatically refresh history table with the new submission
+      loadUserHistory();
+    } else {
+      alert(data.error || 'Error analyzing news.');
+    }
+  } catch (err) {
+    alert('Connection error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Analyze News';
+  }
+});
+
+function displayResult(d) {
+  document.getElementById('initialState').style.display = 'none';
+  const box = document.getElementById('resultBox');
+  box.style.display = 'block';
+  box.className = 'result-box ' + d.badge_class;
+
+  const badge = document.getElementById('badgeElement');
+  badge.className = 'badge badge-' + d.badge_class;
+  badge.innerText = d.prediction;
+
+  document.getElementById('rawConfidence').innerText = d.confidence + '% Model Confidence';
+  document.getElementById('verdictTitle').innerText = d.verdict_display;
+  document.getElementById('verdictExplanation').innerText = d.explanation;
+
+  document.getElementById('confidencePercent').innerText = d.confidence + '%';
+  const bar = document.getElementById('confidenceBar');
+  bar.className = 'progress-bar ' + d.badge_class;
+  bar.style.width = d.confidence + '%';
+
+  document.getElementById('probReal').innerText = (d.real_probability * 100).toFixed(1) + '%';
+  document.getElementById('probFake').innerText = (d.fake_probability * 100).toFixed(1) + '%';
+
+  const reviewNotice = document.getElementById('humanReviewNotice');
+  if (d.writer_status === 'RESOLVED' && d.human_verdict) {
+    const isReal = d.human_verdict === 'REAL';
+    reviewNotice.style.display = 'block';
+    reviewNotice.style.background = isReal ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)';
+    reviewNotice.style.border = '1px solid ' + (isReal ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)');
+    reviewNotice.style.color = isReal ? '#34D399' : '#F87171';
+    reviewNotice.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; margin-bottom: 0.25rem;">
+        <i class="fa-solid fa-check-double"></i> Authoritative Fact-Check: Verified ${d.human_verdict}
+      </div>
+      <div style="font-size: 0.8rem; color: var(--text-main);">
+        Resolved by Editorial Staff (<strong>${d.reviewed_by || 'Editor'}</strong>). ${d.editorial_notes ? '<em>"' + d.editorial_notes + '"</em>' : ''}
+      </div>
+    `;
+  } else if (d.prediction === 'FAKE' || d.writer_status === 'PENDING') {
+    reviewNotice.style.display = 'block';
+    reviewNotice.style.background = 'rgba(245, 158, 11, 0.1)';
+    reviewNotice.style.border = '1px solid rgba(245, 158, 11, 0.35)';
+    reviewNotice.style.color = '#FBBF24';
+    reviewNotice.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; margin-bottom: 0.25rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Queued for Content Writer Fact-Check
+      </div>
+      <div style="font-size: 0.8rem; color: #FDE68A;">
+        The Logistic Regression model detected fake news patterns (${d.confidence}% confidence). This claim has been automatically queued in the <strong>Content Writer Portal</strong> for human review and source verification.
+      </div>
+    `;
+  } else {
+    reviewNotice.style.display = 'none';
+  }
+}
+
+// Dynamically fetch and render User Submission History
+async function loadUserHistory() {
+  const refreshBtn = document.getElementById('refreshHistoryBtn');
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Refreshing...';
+  }
+
+  try {
+    const res = await fetch('/api/user/history');
+    const data = await res.json();
+    if (data.success && data.history) {
+      renderUserHistory(data.history);
+    }
+  } catch (e) {
+    console.error('Failed to load history:', e);
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Refresh Status';
+    }
+  }
+}
+
+function renderUserHistory(items) {
+  const tbody = document.getElementById('userHistoryBody');
+  if (!items || items.length === 0) {
+    tbody.innerHTML = `
+      <tr id="emptyHistoryRow">
+        <td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+          <i class="fa-solid fa-inbox" style="font-size: 2rem; color: var(--border-glow); margin-bottom: 0.5rem; display: block;"></i>
+          No claims submitted in this session yet. Submit a news claim above to see your history and editorial reviews!
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = items.map(h => {
+    let statusHtml = '';
+    if (h.writer_status === 'RESOLVED') {
+      const isReal = h.human_verdict === 'REAL';
+      statusHtml = `
+        <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+          <span class="badge badge-${isReal ? 'success' : 'danger'}" style="font-size: 0.72rem;">
+            <i class="fa-solid fa-check-double"></i> VERIFIED ${h.human_verdict}
+          </span>
+          <span style="font-size: 0.73rem; color: var(--text-subtle);">
+            Resolved by Editor: <strong style="color: var(--text-main);">${h.reviewed_by || 'Editorial Staff'}</strong>
+          </span>
+          ${h.editorial_notes ? `
+            <span style="font-size: 0.72rem; color: #93C5FD; background: rgba(59, 130, 246, 0.1); padding: 0.2rem 0.45rem; border-radius: 4px; display: inline-block; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${h.editorial_notes}">
+              <i class="fa-solid fa-pen-nib"></i> ${h.editorial_notes}
+            </span>
+          ` : ''}
+        </div>
+      `;
+    } else if (h.writer_status === 'PENDING' || h.is_needs_review || h.prediction === 'FAKE') {
+      statusHtml = `
+        <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+          <span class="badge badge-warning" style="font-size: 0.72rem;">
+            <i class="fa-solid fa-clock"></i> PENDING WRITER REVIEW
+          </span>
+          <span style="font-size: 0.72rem; color: #FBBF24;">
+            Queued in Content Writer Portal
+          </span>
+        </div>
+      `;
+    } else {
+      statusHtml = `
+        <span style="color: var(--text-subtle); font-size: 0.78rem;">
+          <i class="fa-solid fa-robot"></i> Auto-Verified Real (ML)
+        </span>
+      `;
+    }
+
+    const mlBadge = h.prediction === 'REAL' || h.raw_label === 'REAL' ? 
+      `<span class="badge badge-success" style="font-size: 0.72rem;"><i class="fa-solid fa-check"></i> ML: Real</span>` :
+      `<span class="badge badge-danger" style="font-size: 0.72rem;"><i class="fa-solid fa-xmark"></i> ML: Fake</span>`;
+
+    const cleanTitle = (h.title || (h.text ? h.text.substring(0, 50) + '...' : '')).replace(/'/g, "\\'");
+    const cleanText = (h.text || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+    return `
+      <tr id="user-row-${h.id}">
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-subtle);">#${h.id}</td>
+        <td style="max-width: 320px;">
+          <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${h.title || ''}">
+            ${h.title || (h.text ? h.text.substring(0, 50) + '...' : '')}
+          </div>
+          <div style="font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.15rem;" title="${h.text || ''}">
+            ${h.text || ''}
+          </div>
+        </td>
+        <td>
+          ${mlBadge}
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+            ${h.confidence}% conf
+          </div>
+        </td>
+        <td>
+          ${statusHtml}
+        </td>
+        <td style="font-size: 0.78rem; color: var(--text-subtle); font-family: 'JetBrains Mono', monospace; white-space: nowrap;">
+          ${h.created_at || ''}
+        </td>
+        <td>
+          <button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="testInForm('${cleanTitle}', '${cleanText}')">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Test
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function refreshFeed() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Refreshing...';
+
+  try {
+    const res = await fetch('/api/refresh-news', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      renderFeed(data.feed);
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Refresh Feed';
+  }
+}
+
+function renderFeed(items) {
+  const grid = document.getElementById('newsGrid');
+  grid.innerHTML = items.map(item => `
+    <div class="news-card">
+      <div>
+        <div class="news-meta">
+          <span class="news-source"><i class="fa-solid fa-newspaper"></i> ${item.source}</span>
+          <span>${item.published}</span>
+        </div>
+        <h3 class="news-headline">${item.title}</h3>
+        <p class="news-snippet">${item.snippet}</p>
+      </div>
+      <div class="news-footer">
+        <div>
+          <span class="badge badge-${item.badge_class}">
+            ${item.prediction === 'REAL' ? '<i class="fa-solid fa-check"></i> Likely Real' : 
+              item.prediction === 'FAKE' ? '<i class="fa-solid fa-xmark"></i> Potentially Fake' : 
+              '<i class="fa-solid fa-user-clock"></i> Needs Review'}
+          </span>
+          <span style="font-size: 0.75rem; color: var(--text-subtle); margin-left: 0.4rem; font-weight: 600;">
+            ${item.confidence}% conf
+          </span>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="testInForm('${item.title.replace(/'/g, "\\'")}', '${item.snippet.replace(/'/g, "\\'")}')">
+          <i class="fa-solid fa-bolt"></i> Test
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+</script>
+{% endblock %}

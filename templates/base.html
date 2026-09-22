@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Veritas - Fake News Detection System{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <a href="{{ url_for('user_view') }}" class="brand-container">
+      <div class="brand-icon">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div class="brand-title">
+        <span>VERITAS NEWS AI</span>
+        <span class="brand-subtitle">AI Fact-Checking Platform</span>
+      </div>
+    </a>
+
+    <!-- Navigation Views -->
+    <nav class="nav-links">
+      <a href="{{ url_for('user_view') }}" class="nav-link {% if active_tab == 'user' %}active{% endif %}">
+        <i class="fa-solid fa-magnifying-glass"></i> User View
+      </a>
+      
+      {% if current_user.is_authenticated and current_user.role in ['writer', 'admin'] %}
+      <a href="{{ url_for('writer_view') }}" class="nav-link {% if active_tab == 'writer' %}active{% endif %}">
+        <i class="fa-solid fa-user-pen"></i> Writer View
+      </a>
+      {% endif %}
+
+      {% if current_user.is_authenticated and current_user.role == 'admin' %}
+      <a href="{{ url_for('admin_view') }}" class="nav-link {% if active_tab == 'admin' %}active{% endif %}">
+        <i class="fa-solid fa-chart-line"></i> Admin View
+      </a>
+      {% endif %}
+    </nav>
+
+    <!-- User Auth Status & Individual Login Links -->
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      {% if current_user.is_authenticated %}
+      <div style="display: flex; align-items: center; gap: 0.6rem; background: rgba(30, 41, 59, 0.6); padding: 0.3rem 0.65rem 0.3rem 0.85rem; border-radius: 999px; border: 1px solid var(--border-color);">
+        <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">
+          <i class="fa-solid fa-circle-user" style="color: var(--primary);"></i> {{ current_user.username }}
+        </span>
+        <span class="badge badge-{% if current_user.role == 'admin' %}danger{% elif current_user.role == 'writer' %}warning{% else %}success{% endif %}" style="font-size: 0.68rem; padding: 0.2rem 0.55rem;">
+          {{ current_user.role | upper }}
+        </span>
+        <a href="{{ url_for('logout_view') }}" class="btn btn-outline btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 999px;" title="Logout">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </a>
+      </div>
+      {% else %}
+      <!-- Direct Individual Login Links -->
+      <div style="display: flex; gap: 0.35rem; align-items: center;">
+        <a href="{{ url_for('login_portal_view', role='user') }}" class="btn btn-outline btn-sm" style="font-size: 0.78rem; padding: 0.4rem 0.75rem;">
+          <i class="fa-solid fa-user" style="color: #3B82F6;"></i> User Login
+        </a>
+        <a href="{{ url_for('login_portal_view', role='writer') }}" class="btn btn-outline btn-sm" style="font-size: 0.78rem; padding: 0.4rem 0.75rem;">
+          <i class="fa-solid fa-user-pen" style="color: #F59E0B;"></i> Writer Login
+        </a>
+        <a href="{{ url_for('login_portal_view', role='admin') }}" class="btn btn-primary btn-sm" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; background: linear-gradient(135deg, #EF4444, #B91C1C);">
+          <i class="fa-solid fa-shield-halved"></i> Admin Login
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Flash Messages across all pages -->
+  <div style="max-width: 1240px; margin: 1rem auto 0 auto; padding: 0 1.5rem;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="padding: 0.85rem 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1rem; font-size: 0.88rem; font-weight: 600; background: {% if category == 'danger' %}var(--danger-bg){% elif category == 'success' %}var(--success-bg){% else %}var(--warning-bg){% endif %}; border: 1px solid {% if category == 'danger' %}var(--danger-border){% elif category == 'success' %}var(--success-border){% else %}var(--warning-border){% endif %}; color: {% if category == 'danger' %}#F87171{% elif category == 'success' %}#34D399{% else %}#FBBF24{% endif %};">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer style="text-align: center; padding: 1.5rem; color: var(--text-subtle); font-size: 0.8rem; border-top: 1px solid var(--border-color); margin-top: auto;">
+    <p>Veritas AI Fake News Detection Platform &bull; Live RSS Ingestion & Editorial Verification</p>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

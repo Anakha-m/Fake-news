@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify News Authenticity | Fake News Detection System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    
+    <!-- Main Input Card -->
+    <div class="simple-card p-4 p-md-5 mb-4">
+      <div class="text-center mb-4">
+        <h2 class="fw-bold mb-1 text-dark">Fake News Detection & Live Verification</h2>
+        <p class="text-muted mb-0">
+          Combines trained machine learning classification with real-time web & news evidence retrieval.
+        </p>
+      </div>
+
+      <form method="post" action="{% url 'predict' %}" id="predictionForm" novalidate>
+        {% csrf_token %}
+
+        {% if form.errors %}
+          <div class="alert alert-danger py-2 mb-3">
+            {% for field, errors in form.errors.items %}
+              {% for error in errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Optional Title Field -->
+        <div class="mb-3">
+          <label for="newsInputTitle" class="form-label fw-semibold text-dark">
+            <i class="bi bi-fonts me-1 text-primary"></i> News Headline or Title (Optional):
+          </label>
+          <input type="text" name="news_title" id="newsInputTitle" class="form-control" 
+            placeholder="e.g. India has announced a new nationwide policy..." value="{{ form.news_title.value|default:'' }}">
+        </div>
+
+        <!-- News Textarea -->
+        <div class="mb-3">
+          <label for="newsInputText" class="form-label fw-semibold text-dark">
+            <i class="bi bi-file-text me-1 text-primary"></i> News Statement or Full Article Content:
+          </label>
+          <textarea name="news_text" id="newsInputText" class="form-control news-input-box" rows="6" 
+            placeholder="Paste news headline, claim statement, or full article text here to verify..." required>{{ form.news_text.value|default:'' }}</textarea>
+          
+          <div class="d-flex justify-content-between text-muted small mt-2">
+            <span id="wordCounter">0 words</span>
+            <span id="charCounter">0 characters</span>
+          </div>
+        </div>
+
+        <!-- Engine Mode Toggle -->
+        <div class="mb-4 p-3 rounded bg-light border">
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="skipLiveCheck" name="skip_live_verification" {% if form.skip_live_verification.value %}checked{% endif %}>
+            <label class="form-check-label fw-semibold text-dark small" for="skipLiveCheck">
+              Run ML-Only Mode (Skip Real-Time Web News Search)
+            </label>
+            <div class="text-muted small">
+              By default, the Dual-Engine searches current news APIs and verified fact-checking indexes to evaluate breaking news.
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary-custom px-4 py-2" id="predictSubmitBtn">
+            <i class="bi bi-cpu me-1"></i> Verify News Authenticity
+          </button>
+          <button type="button" class="btn btn-outline-secondary px-3 py-2" id="clearBtn">
+            Clear Form
+          </button>
+        </div>
+      </form>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const textInput = document.getElementById('newsInputText');
+    const titleInput = document.getElementById('newsInputTitle');
+    const wordCounter = document.getElementById('wordCounter');
+    const charCounter = document.getElementById('charCounter');
+    const clearBtn = document.getElementById('clearBtn');
+
+    function updateCounters() {
+      const text = textInput.value.trim();
+      charCounter.textContent = `${text.length} characters`;
+      const words = text ? text.split(/\s+/).length : 0;
+      wordCounter.textContent = `${words} words`;
+    }
+
+    textInput.addEventListener('input', updateCounters);
+    updateCounters();
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        textInput.value = '';
+        if (titleInput) titleInput.value = '';
+        updateCounters();
+      });
+    }
+  });
+</script>
+{% endblock %}

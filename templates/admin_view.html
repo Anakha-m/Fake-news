@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Veritas Analytics{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>System Analytics & User Management</h1>
+  <p>Real-time verification metrics, registered user account management, and system activity monitoring.</p>
+</div>
+
+<!-- KPI Stat Cards -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+  <div class="stat-card">
+    <div class="stat-icon" style="color: var(--primary);"><i class="fa-solid fa-layer-group"></i></div>
+    <div class="stat-value" style="color: var(--text-main);">{{ stats.total_checked }}</div>
+    <div class="stat-label">Total Articles Checked</div>
+  </div>
+
+  <div class="stat-card" style="border-color: var(--danger-border);">
+    <div class="stat-icon" style="color: #F87171;"><i class="fa-solid fa-shield-virus"></i></div>
+    <div class="stat-value" style="color: #F87171;">{{ stats.fake_detected }}</div>
+    <div class="stat-label">Fake News Detected</div>
+  </div>
+
+  <div class="stat-card" style="border-color: var(--success-border);">
+    <div class="stat-icon" style="color: #34D399;"><i class="fa-solid fa-circle-check"></i></div>
+    <div class="stat-value" style="color: #34D399;">{{ stats.real_detected }}</div>
+    <div class="stat-label">Real News Verified</div>
+  </div>
+
+  <div class="stat-card" style="border-color: var(--warning-border);">
+    <div class="stat-icon" style="color: #FBBF24;"><i class="fa-solid fa-clock-rotate-left"></i></div>
+    <div class="stat-value" style="color: #FBBF24;">{{ stats.pending_review }}</div>
+    <div class="stat-label">Pending Human Review</div>
+  </div>
+</div>
+
+<!-- Registered Accounts Management -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+    <div class="card-title" style="margin-bottom: 0;">
+      <span><i class="fa-solid fa-users" style="color: #60A5FA;"></i> Registered System Accounts</span>
+    </div>
+    <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;" id="userCountLabel">{{ users_list | length }} Accounts Registered</span>
+  </div>
+
+  <div class="table-container">
+    <table class="custom-table" id="usersTable">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Username</th>
+          <th>Assigned Role</th>
+          <th>Account Created</th>
+          <th style="text-align: right;">Admin Action</th>
+        </tr>
+      </thead>
+      <tbody id="usersTableBody">
+        {% for u in users_list %}
+        <tr id="user-row-{{ u.id }}">
+          <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-subtle);">#{{ u.id }}</td>
+          <td style="font-weight: 700;">
+            <i class="fa-solid fa-user-circle" style="color: var(--primary);"></i> {{ u.username }}
+          </td>
+          <td>
+            <span class="badge badge-{% if u.role == 'admin' %}danger{% elif u.role == 'writer' %}warning{% else %}success{% endif %}">
+              {{ u.role | upper }}
+            </span>
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-subtle); font-family: 'JetBrains Mono', monospace;">{{ u.created_at }}</td>
+          <td style="text-align: right;">
+            {% if u.username == 'admin' %}
+              <span style="font-size: 0.75rem; color: var(--text-subtle); font-weight: 600;">
+                <i class="fa-solid fa-lock" style="color: #F59E0B;"></i> Primary Admin
+              </span>
+            {% else %}
+              <button class="btn btn-outline btn-sm" style="color: #F87171; border-color: rgba(239, 68, 68, 0.35); font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="deleteUser({{ u.id }}, '{{ u.username }}')">
+                <i class="fa-solid fa-trash-can"></i> Delete
+              </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Recent Predictions Activity Log with User Attribution & Deletion Rights -->
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+    <div>
+      <div class="card-title" style="margin-bottom: 0.25rem;">
+        <span><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> User News Verification Activity & Audit Trail</span>
+      </div>
+      <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;" id="logCountLabel">
+        Showing {{ recent_logs | length }} Search Events
+      </span>
+    </div>
+    {% if recent_logs %}
+    <button class="btn btn-outline btn-sm" style="color: #F87171; border-color: rgba(239, 68, 68, 0.4); font-size: 0.78rem;" onclick="clearAllPredictions()" id="clearAllLogsBtn">
+      <i class="fa-solid fa-broom"></i> Clear All Activity Logs
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="table-container">
+    <table class="custom-table" id="predictionsTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Searched By (User)</th>
+          <th>News Claim / Headline</th>
+          <th>ML Verdict & Conf</th>
+          <th>Editorial Status & Fact-Checker</th>
+          <th>Search Timestamp</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="predictionsTableBody">
+        {% if recent_logs %}
+          {% for row in recent_logs %}
+          <tr id="log-row-{{ row.id }}">
+            <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-subtle);">#{{ row.id }}</td>
+            
+            <!-- User Attribution -->
+            <td>
+              {% if row.username and row.username != 'Guest User' %}
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <i class="fa-solid fa-circle-user" style="color: var(--primary); font-size: 1.1rem;"></i>
+                  <div>
+                    <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem;">{{ row.username }}</div>
+                    <span class="badge badge-{% if row.user_role == 'admin' %}danger{% elif row.user_role == 'writer' %}warning{% else %}success{% endif %}" style="font-size: 0.62rem; padding: 0.1rem 0.45rem;">
+                      {{ (row.user_role or 'USER') | upper }}
+                    </span>
+                  </div>
+                </div>
+              {% else %}
+                <div style="display: flex; align-items: center; gap: 0.4rem; color: var(--text-subtle); font-size: 0.82rem;">
+                  <i class="fa-solid fa-user-secret" style="font-size: 1rem;"></i>
+                  <span>Guest / Anonymous</span>
+                </div>
+              {% endif %}
+            </td>
+
+            <!-- Claim Title & Text -->
+            <td style="max-width: 300px;">
+              <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ row.title }}">
+                {{ row.title or (row.text[:55] ~ '...') }}
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.15rem;" title="{{ row.text }}">
+                {{ row.text }}
+              </div>
+            </td>
+
+            <!-- ML Prediction -->
+            <td>
+              <span class="badge badge-{{ row.badge_class }}" style="font-size: 0.72rem;">
+                {% if row.prediction == 'REAL' %}
+                  <i class="fa-solid fa-check"></i> Real
+                {% elif row.prediction == 'FAKE' %}
+                  <i class="fa-solid fa-xmark"></i> Fake
+                {% else %}
+                  <i class="fa-solid fa-triangle-exclamation"></i> Needs Review
+                {% endif %}
+              </span>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                {{ row.confidence }}% conf
+              </div>
+            </td>
+
+            <!-- Editorial Resolution Status -->
+            <td>
+              {% if row.writer_status == 'RESOLVED' %}
+                <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                  <span class="badge badge-{% if row.human_verdict == 'REAL' %}success{% else %}danger{% endif %}" style="font-size: 0.72rem;">
+                    <i class="fa-solid fa-check-double"></i> VERIFIED {{ row.human_verdict }}
+                  </span>
+                  <span style="font-size: 0.73rem; color: var(--text-subtle);">
+                    Fact-checked by: <strong>{{ row.reviewed_by or 'Editorial Staff' }}</strong>
+                  </span>
+                  {% if row.editorial_notes %}
+                    <span style="font-size: 0.72rem; color: var(--text-muted); background: rgba(255,255,255,0.04); padding: 0.2rem 0.4rem; border-radius: 4px; display: inline-block; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ row.editorial_notes }}">
+                      <i class="fa-solid fa-comment-dots"></i> {{ row.editorial_notes }}
+                    </span>
+                  {% endif %}
+                </div>
+              {% elif row.is_needs_review %}
+                <span class="badge badge-warning" style="font-size: 0.72rem;">
+                  <i class="fa-solid fa-clock"></i> PENDING (<60%)
+                </span>
+              {% else %}
+                <span style="color: var(--text-subtle); font-size: 0.78rem;">
+                  <i class="fa-solid fa-robot"></i> Auto-Verified
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Timestamp -->
+            <td style="font-size: 0.78rem; color: var(--text-subtle); font-family: 'JetBrains Mono', monospace; white-space: nowrap;">
+              {{ row.created_at }}
+            </td>
+
+            <!-- Delete Action -->
+            <td style="text-align: right;">
+              <button class="btn btn-outline btn-sm" style="color: #F87171; border-color: rgba(239, 68, 68, 0.3); padding: 0.25rem 0.55rem; font-size: 0.75rem;" onclick="deletePrediction({{ row.id }})" title="Delete this log record">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr id="emptyLogsRow">
+            <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+              <i class="fa-solid fa-inbox" style="font-size: 2rem; color: var(--border-glow); margin-bottom: 0.5rem; display: block;"></i>
+              No prediction activity logs found.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Admin: Delete registered user
+async function deleteUser(userId, username) {
+  if (!confirm(`Are you sure you want to permanently delete user account "${username}" (ID: #${userId})?\n\nThis action cannot be undone.`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/users/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      const row = document.getElementById('user-row-' + userId);
+      if (row) {
+        row.style.transition = 'all 0.3s ease';
+        row.style.opacity = '0';
+        setTimeout(() => row.remove(), 300);
+      }
+      alert(data.message || `User account "${username}" deleted successfully.`);
+    } else {
+      alert(data.error || 'Failed to delete user.');
+    }
+  } catch (err) {
+    alert('Connection error: ' + err.message);
+  }
+}
+
+// Admin: Delete single prediction log
+async function deletePrediction(predId) {
+  if (!confirm(`Delete verification activity log #${predId}?`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/predictions/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prediction_id: predId })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      const row = document.getElementById('log-row-' + predId);
+      if (row) {
+        row.style.transition = 'all 0.3s ease';
+        row.style.opacity = '0';
+        setTimeout(() => row.remove(), 300);
+      }
+    } else {
+      alert(data.error || 'Failed to delete log.');
+    }
+  } catch (err) {
+    alert('Connection error: ' + err.message);
+  }
+}
+
+// Admin: Clear all prediction logs
+async function clearAllPredictions() {
+  if (!confirm("WARNING: Are you sure you want to CLEAR ALL activity logs?\n\nAll historical search and verification records will be permanently removed.")) {
+    return;
+  }
+
+  const btn = document.getElementById('clearAllLogsBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Clearing...';
+  }
+
+  try {
+    const res = await fetch('/api/admin/predictions/clear-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      const tbody = document.getElementById('predictionsTableBody');
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr id="emptyLogsRow">
+            <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+              <i class="fa-solid fa-inbox" style="font-size: 2rem; color: var(--border-glow); margin-bottom: 0.5rem; display: block;"></i>
+              No prediction activity logs found.
+            </td>
+          </tr>
+        `;
+      }
+      if (btn) btn.style.display = 'none';
+      alert(data.message || "All activity logs have been cleared.");
+    } else {
+      alert(data.error || "Failed to clear logs.");
+    }
+  } catch (err) {
+    alert('Connection error: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-broom"></i> Clear All Activity Logs';
+    }
+  }
+}
+</script>
+{% endblock %}

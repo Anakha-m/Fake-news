@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verification Report - {{ final_verdict }} | Fake News Detection System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+
+    <!-- Top Action Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Analyze Another News
+      </a>
+      <a href="{% url 'history' %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-clock-history me-1"></i> View History Log
+      </a>
+    </div>
+
+    <!-- Final Assessment Hero Banner -->
+    <div class="clean-card p-4 mb-4 border-2 {% if 'REAL' in final_verdict %}border-success bg-light{% elif 'FAKE' in final_verdict %}border-danger bg-light{% elif 'MISLEADING' in final_verdict %}border-warning bg-light{% else %}border-secondary bg-light{% endif %}">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <span class="text-uppercase small fw-bold tracking-wider text-muted">
+          <i class="bi bi-award me-1"></i> Final Dual-Engine Assessment
+        </span>
+        <span class="badge {% if 'REAL' in final_verdict %}bg-success text-white{% elif 'FAKE' in final_verdict %}bg-danger text-white{% elif 'MISLEADING' in final_verdict %}bg-warning text-dark{% else %}bg-secondary text-white{% endif %} fs-6 px-3 py-1">
+          {{ final_verdict }}
+        </span>
+      </div>
+      
+      <h2 class="h3 fw-bold mb-2 {% if 'REAL' in final_verdict %}text-success{% elif 'FAKE' in final_verdict %}text-danger{% elif 'MISLEADING' in final_verdict %}text-warning{% else %}text-dark{% endif %}">
+        {{ final_verdict }}
+      </h2>
+      
+      <p class="text-dark mb-0 fs-6">
+        <strong>Explanation:</strong> {{ explanation }}
+      </p>
+    </div>
+
+    <!-- Submitted News Overview Card -->
+    <div class="clean-card p-4 mb-4">
+      <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+        <i class="bi bi-file-text-fill text-primary me-2"></i>Submitted News Information
+      </h5>
+      
+      {% if news_title and news_title != news_text %}
+        <div class="mb-2">
+          <span class="text-muted small fw-bold">Headline / Title:</span>
+          <h6 class="fw-bold text-dark mt-1">{{ news_title }}</h6>
+        </div>
+      {% endif %}
+
+      <div>
+        <span class="text-muted small fw-bold">Full Statement / Article Content:</span>
+        <div class="p-3 bg-light rounded border text-secondary small mt-1 font-monospace" style="white-space: pre-wrap;">{{ news_text }}</div>
+      </div>
+
+      {% if claim_info %}
+        <div class="mt-3 pt-3 border-top d-flex flex-wrap gap-2 align-items-center">
+          <span class="text-muted small fw-bold">Search Query Extracted:</span>
+          <code class="bg-light px-2 py-1 rounded border text-dark">{{ claim_info.query|default:"N/A" }}</code>
+          {% if claim_info.is_current_news %}
+            <span class="badge bg-info text-dark">
+              <i class="bi bi-lightning-charge-fill me-1"></i> Current / Breaking Event Flagged
+            </span>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Dual-Engine Breakdown -->
+    <!-- Engine 1: ML Model Prediction -->
+    <div class="clean-card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+        <h5 class="h6 fw-bold text-dark mb-0">
+          <i class="bi bi-cpu-fill text-primary me-2"></i>1. Machine Learning Prediction
+        </h5>
+        <span class="badge {% if ml_prediction == 'REAL' %}bg-success text-white{% elif ml_prediction == 'FAKE' %}bg-danger text-white{% else %}bg-secondary text-white{% endif %} fs-6 px-3 py-1">
+          {{ ml_prediction }}
+        </span>
+      </div>
+
+      <div class="row g-4 align-items-center">
+        <div class="col-md-7">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+              <span>Stylistic Confidence:</span>
+              <strong class="text-dark">{{ ml_confidence }}%</strong>
+            </div>
+            <div class="progress" style="height: 10px;">
+              <div class="progress-bar {% if ml_prediction == 'REAL' %}bg-success{% else %}bg-danger{% endif %}" 
+                   role="progressbar" style="width: {{ ml_confidence }}%;"></div>
+            </div>
+          </div>
+          <p class="small text-muted mb-0">
+            <i class="bi bi-info-circle text-primary me-1"></i>
+            ML analyzes lexical patterns, sensationalism, capitalization, and rhetoric trained on historical datasets.
+          </p>
+        </div>
+
+        <div class="col-md-5">
+          <div class="row g-2 text-center small">
+            <div class="col-6">
+              <div class="p-3 rounded bg-light border">
+                <div class="text-muted small">Real Probability</div>
+                <div class="fs-5 fw-bold text-success">{{ real_probability }}%</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded bg-light border">
+                <div class="text-muted small">Fake Probability</div>
+                <div class="fs-5 fw-bold text-danger">{{ fake_probability }}%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Engine 2: Live News Verification Card -->
+    <div class="clean-card p-4 mb-4">
+      <div class="mb-3 border-bottom pb-2">
+        <h5 class="h6 fw-bold text-dark mb-0">
+          <i class="bi bi-globe-americas text-primary me-2"></i>2. Live News Verification & External Evidence
+        </h5>
+      </div>
+
+      <p class="text-secondary small mb-3">
+        <strong>Evidence Analysis Summary:</strong> {{ evidence_summary }}
+      </p>
+
+      <!-- Sources Table / List -->
+      {% if sources %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 25%;">Source Name</th>
+                <th style="width: 40%;">Article Title</th>
+                <th style="width: 15%;">Publication Date</th>
+                <th style="width: 10%;">Relevance</th>
+                <th style="width: 10%;">Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for src in sources %}
+                <tr>
+                  <td>
+                    <strong class="text-dark">{{ src.source }}</strong>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ src.credibility_tier|default:"Tier 2 (General)" }}</div>
+                  </td>
+                  <td>
+                    <div class="fw-semibold text-dark">{{ src.title }}</div>
+                    {% if src.snippet %}
+                      <div class="text-muted text-truncate" style="max-width: 320px; font-size: 0.78rem;">{{ src.snippet }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="text-secondary">
+                    <i class="bi bi-calendar3 me-1"></i> {{ src.published_date|default:"Recent" }}
+                  </td>
+                  <td>
+                    <span class="badge {% if src.relevance_pct >= 60 %}bg-success text-white{% elif src.relevance_pct >= 35 %}bg-info text-dark{% else %}bg-secondary text-white{% endif %}">
+                      {{ src.relevance_pct }}%
+                    </span>
+                  </td>
+                  <td>
+                    {% if src.url %}
+                      <a href="{{ src.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                        View <i class="bi bi-box-arrow-up-right ms-1"></i>
+                      </a>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-3 rounded bg-light border text-center text-muted small">
+          <i class="bi bi-search me-1"></i> No recent news articles were retrieved matching the extracted claim query.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Required Academic Disclaimer Banner -->
+    <div class="clean-card p-3 mb-4 bg-light border text-secondary small">
+      <div class="d-flex align-items-start">
+        <i class="bi bi-shield-exclamation text-primary fs-5 me-2 mt-0"></i>
+        <div>
+          <strong class="text-dark">System Assessment Disclaimer:</strong><br>
+          This system combines machine learning predictions with currently available online evidence. The result is an automated assessment and should not be considered absolute proof.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

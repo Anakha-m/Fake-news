@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Veritas Fake News Detection System{% endblock %}
+
+{% block content %}
+<div style="max-width: 480px; margin: 2rem auto;">
+  
+  <div class="card" style="padding: 2.2rem;">
+    <div style="text-align: center; margin-bottom: 1.75rem;">
+      <div class="brand-icon" style="margin: 0 auto 1rem auto; width: 52px; height: 52px; font-size: 1.6rem;">
+        <i class="fa-solid fa-user-plus"></i>
+      </div>
+      <h2 style="font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em;">Create Account</h2>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.35rem;">
+        Register as a User, Content Writer, or Administrator
+      </p>
+    </div>
+
+    <!-- Flash Alerts -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="padding: 0.85rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; font-size: 0.88rem; font-weight: 600; background: {% if category == 'danger' %}var(--danger-bg){% elif category == 'success' %}var(--success-bg){% else %}var(--warning-bg){% endif %}; border: 1px solid {% if category == 'danger' %}var(--danger-border){% elif category == 'success' %}var(--success-border){% else %}var(--warning-border){% endif %}; color: {% if category == 'danger' %}#F87171{% elif category == 'success' %}#34D399{% else %}#FBBF24{% endif %};">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register_view') }}">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <div style="position: relative;">
+          <input type="text" id="username" name="username" class="form-control" placeholder="Choose a username" required autofocus style="padding-left: 2.5rem;">
+          <i class="fa-solid fa-user" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-subtle);"></i>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div style="position: relative;">
+          <input type="password" id="password" name="password" class="form-control" placeholder="Create a password" required style="padding-left: 2.5rem;">
+          <i class="fa-solid fa-lock" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-subtle);"></i>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="role">Account Role</label>
+        <select id="role" name="role" class="form-control" style="cursor: pointer;">
+          <option value="user" selected>General User (Submit & Detect News)</option>
+          <option value="writer">Content Writer (Review Flagged Low-Confidence Claims)</option>
+          <option value="admin">System Administrator (Full System & Model Metrics)</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; margin-top: 0.5rem;">
+        <i class="fa-solid fa-user-check"></i> Register Account
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+      Already have an account? <a href="{{ url_for('login_portal_view', role='user') }}" style="color: var(--primary); text-decoration: none; font-weight: 700;">Sign In</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

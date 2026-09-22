@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Content Writer View - Veritas Moderation Console{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Content Writer & Fact-Checker Moderation Console</h1>
+  <p>Human-in-the-loop decision module: Queue of claims detected as FAKE by Logistic Regression. Review sources, add editorial notes, and assign authoritative resolutions.</p>
+</div>
+
+<!-- Moderation Filter & Search Bar -->
+<div class="card" style="margin-bottom: 1.5rem; padding: 1.1rem 1.35rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <!-- Filter Buttons -->
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;" id="filterBtnGroup">
+      <button class="btn btn-primary btn-sm filter-btn" onclick="filterQueue('all', this)">
+        <i class="fa-solid fa-layer-group"></i> All Flagged Claims ({{ flagged_items | length }})
+      </button>
+      <button class="btn btn-outline btn-sm filter-btn" onclick="filterQueue('PENDING', this)">
+        <i class="fa-solid fa-clock" style="color: #FBBF24;"></i> Pending Review
+      </button>
+      <button class="btn btn-outline btn-sm filter-btn" onclick="filterQueue('RESOLVED', this)">
+        <i class="fa-solid fa-check-double" style="color: #34D399;"></i> Resolved
+      </button>
+    </div>
+
+    <!-- Live Search Filter -->
+    <div style="min-width: 260px; flex-grow: 1; max-width: 380px;">
+      <input type="text" id="queueSearchInput" class="form-control" placeholder="🔍 Search fake claims, headlines, submitters..." oninput="searchQueue()" style="font-size: 0.85rem; padding: 0.45rem 0.85rem;">
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 2.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+    <div class="card-title" style="margin-bottom: 0;">
+      <span><i class="fa-solid fa-inbox" style="color: #F59E0B;"></i> Active Editorial Queue</span>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-muted);" id="queueCountDisplay">
+      Showing <strong>{{ flagged_items | length }}</strong> items
+    </div>
+  </div>
+
+  {% if flagged_items %}
+  <div style="display: flex; flex-direction: column; gap: 1.25rem;" id="queueItemsList">
+    {% for item in flagged_items %}
+    <div class="card queue-item-card" id="card-{{ item.id }}" 
+         data-status="{{ item.writer_status }}" 
+         data-ml-pred="{{ item.prediction }}" 
+         data-raw-label="{{ item.raw_label }}"
+         data-search="{{ (item.title ~ ' ' ~ item.text ~ ' ' ~ (item.username or '') ~ ' #' ~ item.id) | lower }}"
+         style="background: rgba(17, 24, 39, 0.7); border: 1px solid {% if item.writer_status == 'PENDING' %}var(--warning-border){% else %}var(--border-color){% endif %}; padding: 1.35rem;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; gap: 1rem; flex-wrap: wrap;">
+        <div>
+          <span class="badge badge-{% if item.writer_status == 'PENDING' %}warning{% elif item.human_verdict == 'REAL' %}success{% else %}danger{% endif %}" id="status-badge-{{ item.id }}">
+            {% if item.writer_status == 'PENDING' %}
+              <i class="fa-solid fa-clock"></i> Pending Writer Review
+            {% elif item.human_verdict == 'REAL' %}
+              <i class="fa-solid fa-check-double"></i> Verified Real by Editorial
+            {% else %}
+              <i class="fa-solid fa-ban"></i> Flagged Fake by Editorial
+            {% endif %}
+          </span>
+          <span style="font-size: 0.78rem; color: var(--text-subtle); margin-left: 0.5rem;">
+            Claim #{{ item.id }} &bull; Submitted By: <strong style="color: var(--text-main);"><i class="fa-solid fa-user"></i> {{ item.username or 'Guest' }}</strong> &bull; {{ item.created_at }}
+          </span>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span class="badge badge-{% if item.raw_label == 'REAL' or item.prediction == 'REAL' %}success{% else %}danger{% endif %}" style="font-size: 0.75rem;">
+            ML Output: {{ item.raw_label or item.prediction }} ({{ item.confidence }}% conf)
+          </span>
+          <span style="font-size: 0.78rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+            Real: {{ (item.real_probability * 100) | round(1) }}% | Fake: {{ (item.fake_probability * 100) | round(1) }}%
+          </span>
+        </div>
+      </div>
+
+      <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-main);">
+        {{ item.title }}
+      </h3>
+      <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem; background: rgba(0, 0, 0, 0.25); padding: 0.85rem; border-radius: var(--radius-sm);">
+        {{ item.text }}
+      </p>
+
+      <!-- Review Action Controls & Editorial Notes -->
+      <div style="padding-top: 0.85rem; border-top: 1px solid var(--border-color);">
+        <div style="font-size: 0.8rem; color: var(--text-subtle); margin-bottom: 0.75rem;">
+          <i class="fa-solid fa-circle-info"></i> {{ item.explanation }}
+        </div>
+
+        {% if item.writer_status == 'PENDING' %}
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; margin-bottom: 0.25rem; display: block;">
+            <i class="fa-solid fa-pen-to-square"></i> Editorial Fact-Check Notes:
+          </label>
+          <input type="text" id="notes-{{ item.id }}" class="form-control" placeholder="e.g. Verified via Official Gazette / PIB Fact Check / Reuters Wire..." style="font-size: 0.84rem; padding: 0.5rem 0.85rem;">
+        </div>
+        {% elif item.editorial_notes %}
+        <div style="font-size: 0.82rem; color: #93C5FD; background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3B82F6; padding: 0.5rem 0.85rem; border-radius: 4px; margin-bottom: 0.75rem;">
+          <strong><i class="fa-solid fa-pen-nib"></i> Editor Note:</strong> {{ item.editorial_notes }}
+        </div>
+        {% endif %}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="font-size: 0.8rem; color: var(--text-muted);">
+            {% if item.reviewed_by %}
+              <i class="fa-solid fa-user-check" style="color: #34D399;"></i> Reviewed by <strong>{{ item.reviewed_by }}</strong> on {{ item.reviewed_at or 'recently' }}
+            {% else %}
+              <i class="fa-solid fa-hourglass-half" style="color: #FBBF24;"></i> Awaiting editorial assignment
+            {% endif %}
+          </div>
+
+          <div id="actions-{{ item.id }}" style="display: flex; gap: 0.75rem;">
+            {% if item.writer_status == 'PENDING' %}
+            <button class="btn btn-success" style="padding: 0.45rem 1rem; font-size: 0.85rem;" onclick="resolveReview({{ item.id }}, 'REAL')">
+              <i class="fa-solid fa-check"></i> Mark as Real
+            </button>
+            <button class="btn btn-danger" style="padding: 0.45rem 1rem; font-size: 0.85rem;" onclick="resolveReview({{ item.id }}, 'FAKE')">
+              <i class="fa-solid fa-xmark"></i> Mark as Fake
+            </button>
+            {% else %}
+            <span style="font-size: 0.85rem; font-weight: 700; color: #34D399; display: flex; align-items: center; gap: 0.4rem;">
+              <i class="fa-solid fa-circle-check"></i> Resolution Recorded ({{ item.human_verdict }})
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+    <i class="fa-solid fa-clipboard-check" style="font-size: 3rem; color: #34D399; margin-bottom: 1rem;"></i>
+    <h3 style="color: var(--text-main); font-weight: 700;">No Submissions in Moderation Queue</h3>
+    <p style="font-size: 0.9rem;">No news articles currently require review.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentFilter = 'all';
+
+function filterQueue(filter, btn) {
+  currentFilter = filter;
+  
+  // Update button active styles
+  document.querySelectorAll('#filterBtnGroup .btn').forEach(b => {
+    b.className = 'btn btn-outline btn-sm filter-btn';
+  });
+  if (btn) {
+    btn.className = 'btn btn-primary btn-sm filter-btn';
+  }
+
+  applyFilters();
+}
+
+function searchQueue() {
+  applyFilters();
+}
+
+function applyFilters() {
+  const query = (document.getElementById('queueSearchInput').value || '').trim().toLowerCase();
+  const cards = document.querySelectorAll('.queue-item-card');
+  let visibleCount = 0;
+
+  cards.forEach(card => {
+    const status = card.getAttribute('data-status');
+    const mlPred = card.getAttribute('data-ml-pred');
+    const rawLabel = card.getAttribute('data-raw-label');
+    const searchContent = card.getAttribute('data-search') || '';
+
+    let matchesFilter = true;
+    if (currentFilter === 'PENDING') {
+      matchesFilter = status === 'PENDING';
+    } else if (currentFilter === 'RESOLVED') {
+      matchesFilter = status === 'RESOLVED';
+    } else if (currentFilter === 'FAKE') {
+      matchesFilter = mlPred === 'FAKE' || rawLabel === 'FAKE';
+    } else if (currentFilter === 'REAL') {
+      matchesFilter = mlPred === 'REAL' || rawLabel === 'REAL';
+    }
+
+    let matchesSearch = true;
+    if (query) {
+      matchesSearch = searchContent.includes(query);
+    }
+
+    if (matchesFilter && matchesSearch) {
+      card.style.display = 'block';
+      visibleCount++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  const counter = document.getElementById('queueCountDisplay');
+  if (counter) {
+    counter.innerHTML = 'Showing <strong>' + visibleCount + '</strong> of <strong>' + cards.length + '</strong> claims';
+  }
+}
+
+async function resolveReview(id, verdict) {
+  const actionsDiv = document.getElementById('actions-' + id);
+  const notesInput = document.getElementById('notes-' + id);
+  const notes = notesInput ? notesInput.value.trim() : '';
+
+  actionsDiv.innerHTML = '<span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Saving...</span>';
+
+  try {
+    const res = await fetch('/api/writer/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, verdict: verdict, notes: notes })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      const badge = document.getElementById('status-badge-' + id);
+      const card = document.getElementById('card-' + id);
+      
+      if (verdict === 'REAL') {
+        badge.className = 'badge badge-success';
+        badge.innerHTML = '<i class="fa-solid fa-check-double"></i> Verified Real by Editorial';
+      } else {
+        badge.className = 'badge badge-danger';
+        badge.innerHTML = '<i class="fa-solid fa-ban"></i> Flagged Fake by Editorial';
+      }
+
+      card.setAttribute('data-status', 'RESOLVED');
+      card.style.borderColor = 'var(--border-color)';
+      if (notesInput) {
+        notesInput.disabled = true;
+        notesInput.style.opacity = '0.6';
+      }
+      actionsDiv.innerHTML = '<span style="font-size: 0.85rem; font-weight: 700; color: #34D399; display: flex; align-items: center; gap: 0.4rem;"><i class="fa-solid fa-circle-check"></i> Resolution Recorded (' + verdict + ')</span>';
+    } else {
+      alert(data.error || 'Error resolving review.');
+    }
+  } catch (err) {
+    alert('Failed to connect: ' + err.message);
+  }
+}
+</script>
+{% endblock %}

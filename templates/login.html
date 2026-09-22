@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}{{ portal.title }} - Veritas Fact-Checking AI{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 1.5rem auto;">
+  
+  <!-- Individual Portal Selection Tabs -->
+  <div style="display: flex; gap: 0.4rem; background: rgba(30, 41, 59, 0.6); padding: 0.4rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+    <a href="{{ url_for('login_portal_view', role='user', next=next) }}" 
+       style="flex: 1; text-align: center; text-decoration: none; font-size: 0.82rem; font-weight: 700; padding: 0.65rem 0.5rem; border-radius: var(--radius-sm); transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 0.4rem; {% if portal_role == 'user' %}background: #3B82F6; color: #FFFFFF; box-shadow: 0 2px 10px rgba(59, 130, 246, 0.35);{% else %}color: var(--text-muted);{% endif %}">
+      <i class="fa-solid fa-user"></i> User Portal
+    </a>
+
+    <a href="{{ url_for('login_portal_view', role='writer', next=next) }}" 
+       style="flex: 1; text-align: center; text-decoration: none; font-size: 0.82rem; font-weight: 700; padding: 0.65rem 0.5rem; border-radius: var(--radius-sm); transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 0.4rem; {% if portal_role == 'writer' %}background: #F59E0B; color: #111827; box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);{% else %}color: var(--text-muted);{% endif %}">
+      <i class="fa-solid fa-user-pen"></i> Writer Portal
+    </a>
+
+    <a href="{{ url_for('login_portal_view', role='admin', next=next) }}" 
+       style="flex: 1; text-align: center; text-decoration: none; font-size: 0.82rem; font-weight: 700; padding: 0.65rem 0.5rem; border-radius: var(--radius-sm); transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 0.4rem; {% if portal_role == 'admin' %}background: #EF4444; color: #FFFFFF; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.35);{% else %}color: var(--text-muted);{% endif %}">
+      <i class="fa-solid fa-shield-halved"></i> Admin Portal
+    </a>
+  </div>
+
+  <!-- Dedicated Portal Card -->
+  <div class="card" style="padding: 2.2rem; border-color: {% if portal_role == 'admin' %}rgba(239, 68, 68, 0.35){% elif portal_role == 'writer' %}rgba(245, 158, 11, 0.35){% else %}rgba(59, 130, 246, 0.35){% endif %};">
+    
+    <div style="text-align: center; margin-bottom: 1.75rem;">
+      <div class="brand-icon" style="margin: 0 auto 1rem auto; width: 56px; height: 56px; font-size: 1.7rem; background: {% if portal_role == 'admin' %}linear-gradient(135deg, #EF4444, #991B1B){% elif portal_role == 'writer' %}linear-gradient(135deg, #F59E0B, #B45309){% else %}linear-gradient(135deg, #3B82F6, #1D4ED8){% endif %};">
+        <i class="{{ portal.icon }}"></i>
+      </div>
+
+      <span class="badge badge-{{ portal.badge_class }}" style="margin-bottom: 0.5rem; font-size: 0.72rem;">
+        {{ portal.badge }}
+      </span>
+
+      <h2 style="font-weight: 800; font-size: 1.65rem; letter-spacing: -0.02em; color: var(--text-main);">
+        {{ portal.title }}
+      </h2>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.35rem;">
+        {{ portal.subtitle }}
+      </p>
+    </div>
+
+    <!-- Flash Alerts -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="padding: 0.85rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; font-size: 0.88rem; font-weight: 600; background: {% if category == 'danger' %}var(--danger-bg){% elif category == 'success' %}var(--success-bg){% else %}var(--warning-bg){% endif %}; border: 1px solid {% if category == 'danger' %}var(--danger-border){% elif category == 'success' %}var(--success-border){% else %}var(--warning-border){% endif %}; color: {% if category == 'danger' %}#F87171{% elif category == 'success' %}#34D399{% else %}#FBBF24{% endif %};">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login_portal_view', role=portal_role, next=next) }}">
+      <div class="form-group">
+        <label class="form-label" for="username">{{ portal_role | upper }} USERNAME</label>
+        <div style="position: relative;">
+          <input type="text" id="username" name="username" class="form-control" value="{{ portal.default_user }}" required autofocus style="padding-left: 2.5rem;">
+          <i class="fa-solid fa-user" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-subtle);"></i>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">PASSWORD</label>
+        <div style="position: relative;">
+          <input type="password" id="password" name="password" class="form-control" value="{{ portal.default_pass }}" required style="padding-left: 2.5rem;">
+          <i class="fa-solid fa-lock" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-subtle);"></i>
+        </div>
+      </div>
+
+      <button type="submit" class="btn {% if portal_role == 'admin' %}btn-danger{% elif portal_role == 'writer' %}btn-primary{% else %}btn-primary{% endif %}" style="width: 100%; padding: 0.85rem; margin-top: 0.5rem; {% if portal_role == 'writer' %}background: linear-gradient(135deg, #F59E0B, #D97706); color: #111827; font-weight: 800;{% endif %}">
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In to {{ portal.title }}
+      </button>
+    </form>
+
+    <!-- Quick Credentials Helper Box -->
+    <div style="margin-top: 1.75rem; padding: 0.85rem; background: rgba(0, 0, 0, 0.25); border-radius: var(--radius-sm); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-size: 0.78rem; color: var(--text-muted);">
+        <strong>Demo Credentials:</strong> <code>{{ portal.default_user }}</code> / <code>{{ portal.default_pass }}</code>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm" onclick="fillAndSubmit('{{ portal.default_user }}', '{{ portal.default_pass }}')" style="font-size: 0.72rem; padding: 0.25rem 0.55rem;">
+        <i class="fa-solid fa-bolt"></i> Auto-Fill
+      </button>
+    </div>
+
+    <!-- Registration Link -->
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+      Need a new account? <a href="{{ url_for('register_view') }}" style="color: var(--primary); text-decoration: none; font-weight: 700;">Register Here</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fillAndSubmit(u, p) {
+  document.getElementById('username').value = u;
+  document.getElementById('password').value = p;
+}
+</script>
+{% endblock %}
