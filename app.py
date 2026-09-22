@@ -461,6 +461,12 @@ def logout_view():
     return redirect(url_for('login_portal_view', role='user'))
 
 
+@app.route("/report")
+def report_view():
+    """Renders the comprehensive Veritas Test Report, Credentials & Project Roadmap."""
+    return render_template("test_report_and_roadmap.html")
+
+
 # ==============================================================================
 # ROUTE 1: USER VIEW (Submission Form + Live Predictions + Personal History & Resolutions + Live RSS)
 # ==============================================================================

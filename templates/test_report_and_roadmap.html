@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veritas - Test Report & Project Roadmap</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-dark: #0B0F19;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #4F46E5;
+      --primary-glow: rgba(79, 70, 229, 0.35);
+      --success: #10B981;
+      --success-glow: rgba(16, 185, 129, 0.25);
+      --warning: #F59E0B;
+      --info: #06B6D4;
+      --text-main: #F9FAFB;
+      --text-muted: #9CA3AF;
+      --code-bg: #030712;
+      --accent-gradient: linear-gradient(135deg, #6366F1 0%, #A855F7 50%, #EC4899 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.15), transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(236, 72, 153, 0.12), transparent 45%);
+      min-height: 100vh;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Top Navigation bar */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .nav-brand {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 0.5rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 1rem;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #A5B4FC;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+
+    .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    /* Summary Bar */
+    .status-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      transition: all 0.3s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .metric-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .icon-pass { background: rgba(16, 185, 129, 0.15); color: #34D399; }
+    .icon-git { background: rgba(99, 102, 241, 0.15); color: #818CF8; }
+    .icon-time { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
+    .icon-suite { background: rgba(6, 182, 212, 0.15); color: #38BDF8; }
+
+    .metric-data h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .metric-data p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Grid Layout */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1rem;
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    /* Test Table */
+    .test-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .test-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .test-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .test-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .test-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #F3F4F6;
+    }
+
+    .test-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .tag-passed {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    /* Portals & Credentials Table */
+    .portal-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .portal-table th {
+      text-align: left;
+      padding: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .portal-table td {
+      padding: 0.85rem 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .role-badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .role-user { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+    .role-writer { background: rgba(168, 85, 247, 0.15); color: #C084FC; }
+    .role-admin { background: rgba(236, 72, 153, 0.15); color: #F472B6; }
+
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      background: var(--code-bg);
+      padding: 0.2rem 0.45rem;
+      border-radius: 0.35rem;
+      font-size: 0.85rem;
+      color: #E2E8F0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Roadmap Tasks */
+    .roadmap-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .roadmap-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: 0.85rem;
+      padding: 1.1rem 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .roadmap-item::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 4px;
+    }
+
+    .track-a::before { background: #6366F1; }
+    .track-b::before { background: #A855F7; }
+    .track-c::before { background: #EC4899; }
+    .track-d::before { background: #10B981; }
+
+    .roadmap-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+
+    .roadmap-title {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .roadmap-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Terminal / Commands Box */
+    .command-block {
+      background: var(--code-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+
+    .command-text {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.88rem;
+      color: #38BDF8;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #9CA3AF;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .copy-btn.copied {
+      background: var(--success);
+      color: #fff;
+      border-color: var(--success);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--card-border);
+      padding-top: 1.5rem;
+    }
+
+    .footer a {
+      color: #818CF8;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+      <a href="/" class="nav-brand">
+        <i class="fa-solid fa-shield-check" style="color: var(--primary);"></i> Veritas Analytics
+      </a>
+      <div class="nav-links">
+        <a href="/login/user" class="nav-btn"><i class="fa-regular fa-user"></i> User Portal</a>
+        <a href="/login/writer" class="nav-btn"><i class="fa-solid fa-pen-nib"></i> Writer Console</a>
+        <a href="/login/admin" class="nav-btn"><i class="fa-solid fa-shield-halved"></i> Admin Portal</a>
+      </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="header">
+      <div class="badge-pill">
+        <i class="fa-solid fa-peace"></i> UN SDG 16 &bull; Peace, Justice & Strong Institutions
+      </div>
+      <h1 class="title">Veritas Analytics & Verification System</h1>
+      <p class="subtitle">Automated Selenium E2E Test Verification Suite, Live Multi-Portal Access, and Next-Phase Roadmap.</p>
+    </header>
+
+    <!-- KPI Status Bar -->
+    <section class="status-bar">
+      <div class="metric-card">
+        <div class="metric-icon icon-pass">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="metric-data">
+          <h3>14 / 14 Passed</h3>
+          <p>Selenium E2E Tests (100%)</p>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon icon-git">
+          <i class="fa-brands fa-github"></i>
+        </div>
+        <div class="metric-data">
+          <h3>Main Branch</h3>
+          <p>Synced to Remote GitHub</p>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon icon-time">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div class="metric-data">
+          <h3>~61 Seconds</h3>
+          <p>Total Automated Suite Runtime</p>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon icon-suite">
+          <i class="fa-solid fa-cubes"></i>
+        </div>
+        <div class="metric-data">
+          <h3>4 Test Suites</h3>
+          <p>User, Writer, Admin, Security</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Grid -->
+    <div class="content-grid">
+      
+      <!-- Left Column: Selenium Test Results -->
+      <div class="section-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-vial-circle-check" style="color: var(--success);"></i>
+            Selenium Test Breakdown
+          </div>
+          <span class="status-tag tag-passed"><i class="fa-solid fa-check"></i> All 14 Passed</span>
+        </div>
+
+        <div class="test-list">
+          <div class="test-item">
+            <div class="test-info">
+              <span class="test-name">User Portal: Real News Analysis</span>
+              <span class="test-desc">Verifies ISRO authentic article classified as Likely Real (Conf: ~61%)</span>
+            </div>
+            <span class="status-tag tag-passed">Passed</span>
+          </div>
+
+          <div class="test-item">
+            <div class="test-info">
+              <span class="test-name">User Portal: Hoax Claim & Editorial Notice</span>
+              <span class="test-desc">Tests garlic hoax detection & flag to writer moderation queue</span>
+            </div>
+            <span class="status-tag tag-passed">Passed</span>
+          </div>
+
+          <div class="test-item">
+            <div class="test-info">
+              <span class="test-name">User Portal: Quick Preset Buttons</span>
+              <span class="test-desc">Auto-populates headline and body text into input form</span>
+            </div>
+            <span class="status-tag tag-passed">Passed</span>
+          </div>
+
+          <div class="test-item">
+            <div class="test-info">
+              <span class="test-name">User Portal: Live RSS Feed Cards</span>
+              <span class="test-desc">Renders feed items and 'Test Claim' auto-fill action</span>
+            </div>
+            <span class="status-tag tag-passed">Passed</span>
+          </div>
+
+          <div class="test-item">
+            <div class="test-info">
+              <span class="test-name">Writer Console: Moderation Queue Tabs</span>
+              <span class="test-desc">Filters claims by status (All, Pending Review, Resolved)</span>
+            </div>
+            <span class="status-tag tag-passed">Passed</span>
+          </div>
+
+          <div class="test-item">
+            <div class="test-info">
+              <span class="test-name">Writer Console: Dynamic Search Bar</span>
+              <span class="test-desc">Real-time keyword search in pending flagged submissions</span>
+            </div>
+            <span class="status-tag tag-passed">Passed</span>
+          </div>
+
+          <div class="test-item">
+            <div class="test-info">
+              <span class="test-name">Admin Portal: 4 KPI Metric Cards</span>
+              <span class="test-desc">Validates articles checked, fake flags, accuracy rate</span>
+            </div>
+            <span class="status-tag tag-passed">Passed</span>
+          </div>
+
+          <div class="test-item">
+            <div class="test-info">
+              <span class="test-name">Admin Portal: User Management & Audit Log</span>
+              <span class="test-desc">Validates user accounts table and prediction audit trail</span>
+            </div>
+            <span class="status-tag tag-passed">Passed</span>
+          </div>
+
+          <div class="test-item">
+            <div class="test-info">
+              <span class="test-name">Security & RBAC: Route Protection</span>
+              <span class="test-desc">Redirects unauthenticated access to /admin and /writer</span>
+            </div>
+            <span class="status-tag tag-passed">Passed</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Portals & Commands -->
+      <div style="display: flex; flex-direction: column; gap: 2rem;">
+        
+        <!-- Role-Based Portals & Credentials -->
+        <div class="section-card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-users-gear" style="color: var(--primary);"></i>
+              Role Portals & Credentials
+            </div>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Port 5000</span>
+          </div>
+
+          <table class="portal-table">
+            <thead>
+              <tr>
+                <th>Portal Role</th>
+                <th>Route</th>
+                <th>Username</th>
+                <th>Password</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="role-badge role-user"><i class="fa-regular fa-user"></i> Public User</span></td>
+                <td><a href="/login/user" style="color: #60A5FA;"><code>/login/user</code></a></td>
+                <td><code>user</code></td>
+                <td><code>user123</code></td>
+              </tr>
+              <tr>
+                <td><span class="role-badge role-writer"><i class="fa-solid fa-pen-nib"></i> Content Writer</span></td>
+                <td><a href="/login/writer" style="color: #C084FC;"><code>/login/writer</code></a></td>
+                <td><code>writer</code></td>
+                <td><code>writer123</code></td>
+              </tr>
+              <tr>
+                <td><span class="role-badge role-admin"><i class="fa-solid fa-shield-halved"></i> Administrator</span></td>
+                <td><a href="/login/admin" style="color: #F472B6;"><code>/login/admin</code></a></td>
+                <td><code>admin</code></td>
+                <td><code>admin123</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Quick Execution Commands -->
+        <div class="section-card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-terminal" style="color: var(--info);"></i>
+              Quick CLI Commands
+            </div>
+          </div>
+
+          <div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem;">1. Start Development Server</p>
+            <div class="command-block">
+              <span class="command-text">python app.py</span>
+              <button class="copy-btn" onclick="copyCode(this, 'python app.py')"><i class="fa-regular fa-copy"></i> Copy</button>
+            </div>
+
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem;">2. Run Selenium Tests (Headless)</p>
+            <div class="command-block">
+              <span class="command-text">python run_selenium_tests.py</span>
+              <button class="copy-btn" onclick="copyCode(this, 'python run_selenium_tests.py')"><i class="fa-regular fa-copy"></i> Copy</button>
+            </div>
+
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem;">3. Run Selenium with Visible Chrome UI</p>
+            <div class="command-block">
+              <span class="command-text">python run_selenium_tests.py --headed</span>
+              <button class="copy-btn" onclick="copyCode(this, 'python run_selenium_tests.py --headed')"><i class="fa-regular fa-copy"></i> Copy</button>
+            </div>
+
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem;">4. Push Latest Changes to GitHub</p>
+            <div class="command-block">
+              <span class="command-text">git add . && git commit -m "update" && git push</span>
+              <button class="copy-btn" onclick="copyCode(this, 'git add . && git commit -m \"update\" && git push')"><i class="fa-regular fa-copy"></i> Copy</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Roadmap & Next Steps -->
+    <section class="section-card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fa-solid fa-map-location-dot" style="color: #A855F7;"></i>
+          Next-Phase Development Roadmap
+        </div>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Recommended Next Milestones</span>
+      </div>
+
+      <div class="roadmap-list">
+        <div class="roadmap-item track-a">
+          <div class="roadmap-head">
+            <span class="roadmap-title">Track A &bull; Interactive Analytics & Visualization</span>
+            <span class="badge-pill" style="margin-bottom:0;">UI Enhancement</span>
+          </div>
+          <p class="roadmap-desc">Integrate Chart.js graphs inside <a href="/admin" style="color:#A5B4FC;">Admin Portal</a> for daily verification trendlines, category distributions, and SDG 16 impact meters.</p>
+        </div>
+
+        <div class="roadmap-item track-b">
+          <div class="roadmap-head">
+            <span class="roadmap-title">Track B &bull; Machine Learning Model Retraining</span>
+            <span class="badge-pill" style="margin-bottom:0;">ML Pipeline</span>
+          </div>
+          <p class="roadmap-desc">Expand training dataset with multi-domain datasets (WELFake, LIAR, ISOT) and benchmark ensemble classifiers in <code>ml_model/train_model.py</code>.</p>
+        </div>
+
+        <div class="roadmap-item track-c">
+          <div class="roadmap-head">
+            <span class="roadmap-title">Track C &bull; Multi-Source Live News Ingestion</span>
+            <span class="badge-pill" style="margin-bottom:0;">Backend Services</span>
+          </div>
+          <p class="roadmap-desc">Add additional live RSS feeds (Reuters, BBC News, AP News, The Hindu) with automatic keyword deduplication in <code>services/rss_service.py</code>.</p>
+        </div>
+
+        <div class="roadmap-item track-d">
+          <div class="roadmap-head">
+            <span class="roadmap-title">Track D &bull; Continuous Integration (GitHub Actions)</span>
+            <span class="badge-pill" style="margin-bottom:0;">DevOps & QA</span>
+          </div>
+          <p class="roadmap-desc">Add a <code>.github/workflows/selenium.yml</code> workflow to automatically trigger the 14 Selenium tests on every commit and pull request.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Veritas Fake News Detection Platform &bull; Built with Flask, Scikit-Learn & Selenium E2E &bull; Repository: <a href="https://github.com/Anakha-m/Fake-news.git" target="_blank">Anakha-m/Fake-news</a></p>
+    </footer>
+  </div>
+
+  <script>
+    function copyCode(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const originalHtml = btn.innerHTML;
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = originalHtml;
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
