@@ -157,10 +157,14 @@ class TestUserPortalE2E(unittest.TestCase):
         
         driver.get(f"{BASE_URL}/")
         
-        # Wait for RSS grid
-        news_grid = wait.until(EC.presence_of_element_located((By.ID, "newsGrid")))
-        cards = news_grid.find_elements(By.CLASS_NAME, "news-card")
-        self.assertGreater(len(cards), 0)
+        # Wait for RSS feed cards to be rendered dynamically
+        try:
+            cards = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#newsGrid .news-card")))
+        except Exception:
+            news_grid = wait.until(EC.presence_of_element_located((By.ID, "newsGrid")))
+            cards = news_grid.find_elements(By.CLASS_NAME, "news-card")
+        
+        self.assertGreater(len(cards), 0, "Expected at least 1 RSS news card to be loaded")
         
         # Click the test button on the first card
         test_btn = cards[0].find_element(By.CSS_SELECTOR, "button")
